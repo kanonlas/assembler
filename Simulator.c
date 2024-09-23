@@ -41,7 +41,6 @@ int main(int argc, char *argv[])
 	}
 	printf("memory[%d]=%d\n", state.numMemory, state.mem[state.numMemory]);
     }
-
     return(0);
 }
 

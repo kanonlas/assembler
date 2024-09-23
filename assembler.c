@@ -74,10 +74,10 @@ int main(int argc, char *argv[]) {
 int isNumber(char *str) {
     for (int i = 0; str[i] != '\0'; i++) {
         if (!isdigit(str[i]) && str[i] != '-') {
-            return 0; // ไม่ใช่ตัวเลข
+            return 0; // Not a number
         }
     }
-    return 1; // เป็นตัวเลข
+    return 1; // Is a number
 }
 
 // Read a long line from the input file
@@ -113,19 +113,22 @@ int readAndParse(FILE *inFilePtr, char *label, char *opcode, char *arg0, char *a
 
     ptr = line;
 
+
     // Check for label
     if (sscanf(ptr, "%[^\t\n ]", label)) {
         ptr += strlen(label);
-        if (label[strlen(label) - 1] == ':') {
-            label[strlen(label) - 1] = '\0'; // Remove the ':' from label
-        } else {
-            label[0] = '\0'; // No label
-        }
+        // Trim whitespace
+        while (*ptr == ' ' || *ptr == '\t') ptr++;
+    } else {
+        label[0] = '\0'; // No label
     }
 
     // Parse opcode and arguments
-    sscanf(ptr, "%*[\t\n ]%[^\t\n ]%*[\t\n ]%[^\t\n ]%*[\t\n ]%[^\t\n ]", opcode, arg0, arg1);
-    
+    sscanf(ptr, "%s %s %s %s", opcode, arg0, arg1, arg2);
+
+    // Debugging: ตรวจสอบค่าที่อ่านออกมา
+    printf("Parsed: '%s', '%s','%s', '%s','%s'\n", label, opcode, arg0, arg1, arg2);
+
     return 1;
 }
 
@@ -138,6 +141,7 @@ void addLabel(char *label, int address) {
     strcpy(labels[labelCount].label, label);
     labels[labelCount].address = address;
     labelCount++;
+    printf("Added label: %s at address: %d\n", label, address); // Debugging
 }
 
 // Find the address of a label
@@ -147,7 +151,7 @@ int findLabelAddress(char *label) {
             return labels[i].address;
         }
     }
-    printf("error: undefined label %s\n", label);
+    printf("error: undefined label '%s'\n", label);
     exit(1);
 }
 
@@ -180,7 +184,9 @@ void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1,
         fprintf(outFilePtr, "%d\n", value);  // Write value to output file
         return;  // End processing .fill
     }
-    
+     // Debugging: ตรวจสอบค่าที่ได้รับ
+    printf("Generating machine code for  %s, %s %s %s, %s\n", opcode, arg0, arg1, arg2, label);
+
     // Get the opcode
     int op = getOpcode(opcode);
     instruction |= (op << 22); // Set opcode

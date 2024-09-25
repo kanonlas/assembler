@@ -192,13 +192,26 @@ void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1,
     instruction |= (op << 22); // Set opcode
 
     // R-type instructions
-    if (strcmp(opcode, "add") == 0 || strcmp(opcode, "nand") == 0) {
+    // if (strcmp(opcode, "add") == 0 || strcmp(opcode, "nand") == 0) {
+    //     int regA = atoi(arg0);
+    //     int regB = atoi(arg1);
+    //     int destReg = atoi(arg2);
+    //     instruction |= (regA << 19) | (regB << 16) | destReg;
+    //     instruction &= 0xFFFFFFFC; // Clear bits 2-0
+    // }
+
+  if (strcmp(opcode, "add") == 000){
+        // int instruction = 0;
         int regA = atoi(arg0);
         int regB = atoi(arg1);
         int destReg = atoi(arg2);
         instruction |= (regA << 19) | (regB << 16) | destReg;
-        instruction &= 0xFFFFFFFC; // Clear bits 2-0
-    }
+        // instruction &= 0xFFFFFFFC; // Clear bits 2-0  
+        if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){
+            exit(1);
+        }
+    } 
+
     // I-type instructions
     else if (strcmp(opcode, "lw") == 0 || strcmp(opcode, "sw") == 0 || strcmp(opcode, "beq") == 0) {
         int regA = atoi(arg0);

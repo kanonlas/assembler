@@ -4,6 +4,8 @@
 #include <string.h>
 #include <string>
 #include <bits/stdc++.h>
+
+
 using namespace std;
 
 #define MAXLINELENGTH 1000
@@ -11,13 +13,6 @@ using namespace std;
 int readAndParse(FILE *, char *, char *, char *, char *, char *);  // function อ่านบรรทัดไฟล์ 
 int isNumber(char *); //ตรวจสอบว่าข้อความเป็นตัวเลขไหม
 
-
-
-
-string convertToBinary( char* dec)
-{
-    
-}
 
 
 int main(int argc, char *argv[])
@@ -48,23 +43,22 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    std::string opcodeNum;
-    // labelNum, opcodeNum, arg0Num, arg1Num, arg2Num;  //เอาไว้เก็บเลขเอาไปใช้ต่อ 
+   // std::string opcodeNum, labelNum, opcodeNum, arg0Num, arg1Num, arg2Num;  //เอาไว้เก็บเลขเอาไปใช้ต่อ 
 
 while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2))
 {
 //arg0 = dest 
 //arg1 = rs1
 //arg2 = rs2
-    if (!strcmp(opcode, "add")) { // บวก ค่าใน regA ด้วยค่าใน regB และเอาไปเก็บใน destReg
-        opcodeNum = "000"; // เปลี่ยน opcode
-        labelNum; //handle label 
-        if(!isNumber(arg2)){ // check number   
-            char destLab;
-            destLab = arg2; 
-        } 
-        printf("%s  %s  %s ",arg0 ,arg1 ,arg2 );
-
+  if (strcmp(opcode, "add") == 000){
+        int instruction = 0;
+        int regA = atoi(arg0);
+        int regB = atoi(arg1);
+        int destReg = atoi(arg2);
+        instruction |= (regA << 19) | (regB << 16) | destReg;
+        if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){
+            exit(1);
+        }
     }if (!strcmp(opcode, "nand")) { // Nand ค่าใน regA ด้วยค่าใน regB และเอาค่าไปเก็บใน destReg
        
     }if (!strcmp(opcode, "lw")) { //Load regB จาก memory และ memory address หาได้จากการเอา offsetField บวกกับค่าใน regA
@@ -81,9 +75,9 @@ while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2))
        
     }
     
-}
 
-    
+
+
     
     // rewind(inFilePtr); //อ่านไฟล์อีกรอบ
 

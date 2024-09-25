@@ -50,7 +50,8 @@ while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2))
 //arg0 = dest 
 //arg1 = rs1
 //arg2 = rs2
-  if (strcmp(opcode, "add") == 000){
+  if (strcmp(opcode, "add") == 0 ){
+
         int instruction = 0;
         int regA = atoi(arg0);
         int regB = atoi(arg1);
@@ -59,8 +60,19 @@ while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2))
         if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){
             exit(1);
         }
-    }if (!strcmp(opcode, "nand")) { // Nand ค่าใน regA ด้วยค่าใน regB และเอาค่าไปเก็บใน destReg
-       
+    }if(strcmp(opcode, "nand") == 0 ){
+        
+        int instruction = 0;
+        int op = atoi(opcode);
+        int regA = atoi(arg0);
+        int regB = atoi(arg1);
+        int destReg = atoi(arg2);
+        instruction |=(regA << 19) | (regB << 16) | destReg;
+        if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){
+            exit(1);
+        }
+    
+    
     }if (!strcmp(opcode, "lw")) { //Load regB จาก memory และ memory address หาได้จากการเอา offsetField บวกกับค่าใน regA
        
     }if (!strcmp(opcode, "sw")) { //Store regB ใน memory และ memory address หาได้จากการเอา offsetField บวกกับค่าใน regA

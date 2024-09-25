@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
 #define MAXLINELENGTH 1000
 #define MAXLABELS 100
@@ -171,7 +172,6 @@ int getOpcode(char *opcode) {
 
 // Generate machine code for the given assembly instruction
 void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1, char *arg2, char *label) {
-    int instruction = 0;
 
     // Handle .fill command
     if (strcmp(opcode, ".fill") == 0) {
@@ -187,10 +187,6 @@ void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1,
      // Debugging: ตรวจสอบค่าที่ได้รับ
     printf("Generating machine code for  %s, %s %s %s, %s\n", opcode, arg0, arg1, arg2, label);
 
-    // Get the opcode
-    int op = getOpcode(opcode);
-    instruction |= (op << 22); // Set opcode
-
     // R-type instructions
     // if (strcmp(opcode, "add") == 0 || strcmp(opcode, "nand") == 0) {
     //     int regA = atoi(arg0);
@@ -200,48 +196,73 @@ void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1,
     //     instruction &= 0xFFFFFFFC; // Clear bits 2-0
     // }
 
-  if (strcmp(opcode, "add") == 000){
-        // int instruction = 0;
+    if (strcmp(opcode, "add") == 0) {
+        int instructionAdd = 0;
         int regA = atoi(arg0);
         int regB = atoi(arg1);
         int destReg = atoi(arg2);
-        instruction |= (regA << 19) | (regB << 16) | destReg;
-        // instruction &= 0xFFFFFFFC; // Clear bits 2-0  
-        if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){
-            exit(1);
-        }
-    } 
-
-    // I-type instructions
-    else if (strcmp(opcode, "lw") == 0 || strcmp(opcode, "sw") == 0 || strcmp(opcode, "beq") == 0) {
+        int op = getOpcode(opcode);
+        instructionAdd |= (op << 22); // Set opcode
+        instructionAdd |= (regA << 19) | (regB << 16) | destReg; // Mask destReg to ensure it fits in 3 bits
+        fprintf(outFilePtr, "%d\n", instructionAdd);
+    } else if (strcmp(opcode, "nand") == 0) {
+        int instructionNand = 0;
         int regA = atoi(arg0);
         int regB = atoi(arg1);
-        int offset;
-
-        if (strcmp(opcode, "beq") == 0) {
-            offset = findLabelAddress(arg2) - (instruction / 4 + 1); // PC + 1
-        } else {
-            offset = atoi(arg2);
-        }
-
-        instruction |= (regA << 19) | (regB << 16) | toOffset(offset, 16);
+        int destReg = atoi(arg2);
+        int op = getOpcode(opcode);
+        instructionNand |= (op << 22); // Set opcode
+        instructionNand |= (regA << 19) | (regB << 16) | (destReg << 13) ; // Mask destReg to ensure it fits in 3 bits
+        fprintf(outFilePtr, "%d\n", instructionNand);
     }
-    // J-type instructions
-    else if (strcmp(opcode, "jalr") == 0) {
-        int regA = atoi(arg0);
-        int regB = atoi(arg1);
-        instruction |= (regA << 19) | (regB << 16);
-    }
+    
 
     // Write instruction to output file
-    fprintf(outFilePtr, "%d\n", instruction);
-}
+    // Ensure you write the instruction after it has been constructed
 
-// Convert a value to a 16-bit signed offset
-int toOffset(int value, int bits) {
-    if (value < -(1 << (bits - 1)) || value >= (1 << (bits - 1))) {
-        printf("error: offset out of range\n");
-        exit(1);
-    }
-    return value & ((1 << bits) - 1); // Mask to bits
+    //  if(strcmp(opcode, "nand") == 001){
+        
+    //     int instruction = 0;
+    //     int regA = atoi(arg0);
+    //     int regB = atoi(arg1);
+    //     int destReg = atoi(arg2);
+    //     instruction |= (1 << 23) | (regA << 19) | (regB << 16) | (destReg & 0x7);
+    //     if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){
+    //         exit(1);
+    //     }
+    // }
+
 }
+//     // I-type instructions
+//     else if (strcmp(opcode, "lw") == 0 || strcmp(opcode, "sw") == 0 || strcmp(opcode, "beq") == 0) {
+//         int regA = atoi(arg0);
+//         int regB = atoi(arg1);
+//         int offset;
+
+//         if (strcmp(opcode, "beq") == 0) {
+//             offset = findLabelAddress(arg2) - (instruction / 4 + 1); // PC + 1
+//         } else {
+//             offset = atoi(arg2);
+//         }
+
+//         instruction |= (regA << 19) | (regB << 16) | toOffset(offset, 16);
+//     }
+//     // J-type instructions
+//     else if (strcmp(opcode, "jalr") == 0) {
+//         int regA = atoi(arg0);
+//         int regB = atoi(arg1);
+//         instruction |= (regA << 19) | (regB << 16);
+//     }
+
+//     // Write instruction to output file
+//     fprintf(outFilePtr, "%d\n", instruction);
+// }
+
+// // Convert a value to a 16-bit signed offset
+// int toOffset(int value, int bits) {
+//     if (value < -(1 << (bits - 1)) || value >= (1 << (bits - 1))) {
+//         printf("error: offset out of range\n");
+//         exit(1);
+//     }
+//     return value & ((1 << bits) - 1); // Mask to bits
+// }

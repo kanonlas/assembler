@@ -45,58 +45,66 @@ int main(int argc, char *argv[])
 
    // std::string opcodeNum, labelNum, opcodeNum, arg0Num, arg1Num, arg2Num;  //เอาไว้เก็บเลขเอาไปใช้ต่อ 
 
+// Convert opcode to binary representation
+int getOpcode(char *opcode) {
+    if (strcmp(opcode, "add") == 0) return 0b000;
+    if (strcmp(opcode, "nand") == 0) return 0b001;
+    if (strcmp(opcode, "lw") == 0) return 0b010;
+    if (strcmp(opcode, "sw") == 0) return 0b011;
+    if (strcmp(opcode, "beq") == 0) return 0b100;
+    if (strcmp(opcode, "jalr") == 0) return 0b101;
+    if (strcmp(opcode, "halt") == 0) return 0b110;
+    if (strcmp(opcode, "noop") == 0) return 0b111;
+    printf("error: invalid opcode %s\n", opcode);
+    exit(1);
+}
+
 while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2))
 {
-//arg0 = dest 
-//arg1 = rs1
-//arg2 = rs2
-  if (strcmp(opcode, "add") == 0 ){
 
-        int instruction = 0;
+      if (strcmp(opcode, "add") == 0) {
+        int instructionAdd = 0;
         int regA = atoi(arg0);
         int regB = atoi(arg1);
         int destReg = atoi(arg2);
-        instruction |= (regA << 19) | (regB << 16) | destReg;
-        if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){
-            exit(1);
-        }
-    }if(strcmp(opcode, "nand") == 0 ){
-        
-        int instruction = 0;
-        int op = atoi(opcode);
+        int op = getOpcode(opcode);
+        instructionAdd |= (op << 22); 
+        instructionAdd |= (regA << 19) | (regB << 16) | destReg;
+        fprintf(outFilePtr, "%d\n", instructionAdd);
+    } if(strcmp(opcode, "nand") == 0 ){
+
+        int instructionNand = 0;
+        int op = getOpcode(opcode);
         int regA = atoi(arg0);
         int regB = atoi(arg1);
         int destReg = atoi(arg2);
-        instruction |=(regA << 19) | (regB << 16) | destReg;
-        if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){
-            exit(1);
-        }
-    
-    
-    }if (!strcmp(opcode, "lw")) { //Load regB จาก memory และ memory address หาได้จากการเอา offsetField บวกกับค่าใน regA
-       
-    }if (!strcmp(opcode, "sw")) { //Store regB ใน memory และ memory address หาได้จากการเอา offsetField บวกกับค่าใน regA
-       
-    }if (!strcmp(opcode, "beq")) { // ถ้า ค่าใน regA เท่ากับค่าใน regB ให้กระโดดไปที่ address PC+1+offsetField ซึ่ง PC คือ address ของ beq instruction
-       
-    }if (!strcmp(opcode, "jalr")) { //เก็บค่า PC+1 ไว้ใน regB ซึ่ง PC คือ address ของ jalr instruction และกระโดดไปที่ address ที่ถูกเก็บไว้ใน regA แต่ถ้า regA และ regB คือ register ตัวเดียวกัน ให้เก็บ PC+1 ก่อน และค่อยกระโดดไปที่ PC+1
-       
-    }if (!strcmp(opcode, "halr")) { //เพิ่มค่า PC เหมือน instructions อื่นๆ และ halt เครื่อง นั่นคือให้ simulator รู้ว่าเครื่องมีการ halted เกิดขึ้น
-       
-    }if (!strcmp(opcode, "noop")) { //เพิ่มค่า PC เหมือน instructions อื่นๆ และ halt เครื่อง นั่นคือให้ simulator รู้ว่าเครื่องมีการ halted เกิดขึ้น
-       
+        instruction |=(op << 22) | (regA << 19) | (regB << 16) | destReg;
+
+        if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){ exit(1);}
+
+    fprintf(outFilePtr, "%d\n", instructionNand);
+
+    }if (!strcmp(opcode, "lw")) { 
+        int instructionLOADW = 0;
+        int op = getOpcode(opcode);
+        int regA = atoi(arg0);
+        int regB = atoi(arg1);
+        int destReg = atoi(arg2);
+        instruction |=(op << 22) | (regA << 19) | (regB << 16) | destReg;
+
+        if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){ exit(1);}
+
+    printf("%s" , arg2);
+    fprintf(outFilePtr, "%d\n", instructionLOADW);
     }
-    
 
 
-
-    
-    // rewind(inFilePtr); //อ่านไฟล์อีกรอบ
 
     
     return(0);
 
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 /*

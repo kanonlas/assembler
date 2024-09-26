@@ -196,26 +196,47 @@ void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1,
     //     instruction &= 0xFFFFFFFC; // Clear bits 2-0
     // }
 
-    if (strcmp(opcode, "add") == 0) {
+    if (strcmp(opcode, "add")) {
         int instructionAdd = 0;
         int regA = atoi(arg0);
         int regB = atoi(arg1);
         int destReg = atoi(arg2);
         int op = getOpcode(opcode);
-        instructionAdd |= (op << 22); // Set opcode
-        instructionAdd |= (regA << 19) | (regB << 16) | destReg; // Mask destReg to ensure it fits in 3 bits
+        instructionAdd |= (op << 22); 
+        instructionAdd |= (regA << 19) | (regB << 16) | destReg;
         fprintf(outFilePtr, "%d\n", instructionAdd);
-    } else if (strcmp(opcode, "nand") == 0) {
-        int instructionNand = 0;
+    } if(strcmp(opcode, "nand")){
+
+        int instruction = 0;
+        int op = getOpcode(opcode);
         int regA = atoi(arg0);
         int regB = atoi(arg1);
         int destReg = atoi(arg2);
+        instruction |=(op << 22) | (regA << 19) | (regB << 16) | destReg;
+
+        if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){
+            exit(1);
+        }
+    fprintf(outFilePtr, "%d\n", instruction);
+    }  
+     if (!strcmp(opcode, "lw")) { 
+        int instructionLOADW = 0;
         int op = getOpcode(opcode);
-        instructionNand |= (op << 22); // Set opcode
-        instructionNand |= (regA << 19) | (regB << 16) | (destReg << 13) ; // Mask destReg to ensure it fits in 3 bits
-        fprintf(outFilePtr, "%d\n", instructionNand);
+        int regA = atoi(arg0);
+        int regB = atoi(arg1);
+
+        if(arg2)
+        int offset = atoi(arg2);
+        instructionLOADW |= (op << 22) | (regA << 19) | (regB << 16) | offset;
+
+        if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){ exit(1);}
+        if( offset <= -32768 || offset >= 32767 ){ exit(1);}
+        if( offset )
+    printf("%s" , arg2);
+    fprintf(outFilePtr, "%d\n", instructionLOADW);
+
     }
-    
+
 
     // Write instruction to output file
     // Ensure you write the instruction after it has been constructed

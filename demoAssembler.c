@@ -1,13 +1,14 @@
-/* include */    
-    #include <stdlib.h>
-    #include <stdio.h>
-    #include <string.h>
-    #include <string>
-    #include <bits/stdc++.h>
-using namespace std;
-/* define */
-#define MAXLINELENGTH 1000
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <math.h>
 
+#define MAXLINELENGTH 1000
+#define MAXLABELS 100
+#define LABEL_LENGTH 7
+#define MEMORY_SIZE 65536
+#define NUM_REGS 8
 
 
 /* head - function */
@@ -58,17 +59,25 @@ int main(int argc, char *argv[])
         //arg2 = rs2
 
         /* Gutto's part */
-        if (!strcmp(opcode, "add")) { // บวก ค่าใน regA ด้วยค่าใน regB และเอาไปเก็บใน destReg
-            opcodeNum = "000"; // เปลี่ยน opcode
-            labelNum; //handle label 
-            if(!isNumber(arg2)){ // check number   
-                char destLab;
-                destLab = arg2; 
-            } 
-            printf("%s  %s  %s ",arg0 ,arg1 ,arg2 );
-
-        }if (!strcmp(opcode, "nand")) { // Nand ค่าใน regA ด้วยค่าใน regB และเอาค่าไปเก็บใน destReg
-        
+         if (strcmp(opcode, "add") == 0) {
+        int instructionAdd = 0;
+        int regA = atoi(arg0);
+        int regB = atoi(arg1);
+        int destReg = atoi(arg2);
+        int op = getOpcode(opcode);
+        instructionAdd |= (op << 22); // Set opcode
+        instructionAdd |= (regA << 19) | (regB << 16) | destReg; // Mask destReg to ensure it fits in 3 bits
+        fprintf(outFilePtr, "%d\n", instructionAdd);
+    } else if (strcmp(opcode, "nand") == 0) {
+        int instructionNand = 0;
+        int regA = atoi(arg0);
+        int regB = atoi(arg1);
+        int destReg = atoi(arg2);
+        int op = getOpcode(opcode);
+        instructionNand |= (op << 22); // Set opcode
+        instructionNand |= (regA << 19) | (regB << 16) | (destReg << 13) ; // Mask destReg to ensure it fits in 3 bits
+        fprintf(outFilePtr, "%d\n", instructionNand);
+    
         }if (!strcmp(opcode, "lw")) { //Load regB จาก memory และ memory address หาได้จากการเอา offsetField บวกกับค่าใน regA
         
         }if (!strcmp(opcode, "sw")) { //Store regB ใน memory และ memory address หาได้จากการเอา offsetField บวกกับค่าใน regA

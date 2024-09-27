@@ -23,7 +23,7 @@ int isNumber(char *);
 int findLabelAddress(char *);
 void addLabel(char *, int);
 int getOpcode(char *);
-void generateMachineCode(FILE *, char *, char *, char *, char *, char *);
+void generateMachineCode(FILE *, char *, char *, char *, char *, char *, int);
 int toOffset(int, int);
 
 int main(int argc, char *argv[]) {
@@ -56,6 +56,7 @@ int main(int argc, char *argv[]) {
 
     // Reset file pointer
     rewind(inFilePtr);
+    address = 0;
     outFilePtr = fopen(outFileString, "w");
     if (outFilePtr == NULL) {
         printf("error in opening %s\n", outFileString);
@@ -64,7 +65,8 @@ int main(int argc, char *argv[]) {
 
     // Second pass: Generate machine code
     while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2)) {
-        generateMachineCode(outFilePtr, opcode, arg0, arg1, arg2, label);
+        generateMachineCode(outFilePtr, opcode, arg0, arg1, arg2, label, address);
+        address++;
     }
 
     fclose(inFilePtr);
@@ -128,7 +130,7 @@ int readAndParse(FILE *inFilePtr, char *label, char *opcode, char *arg0, char *a
     sscanf(ptr, "%s %s %s %s", opcode, arg0, arg1, arg2);
 
     // Debugging: ตรวจสอบค่าที่อ่านออกมา
-    printf("Parsed: '%s', '%s','%s', '%s','%s'\n", label, opcode, arg0, arg1, arg2);
+    //printf("Parsed: '%s', '%s','%s', '%s','%s'\n", label, opcode, arg0, arg1, arg2);
 
     return 1;
 }
@@ -171,7 +173,7 @@ int getOpcode(char *opcode) {
 }
 
 // Generate machine code for the given assembly instruction
-void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1, char *arg2, char *label) {
+void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1, char *arg2, char *label, int address) {
 
     // Handle .fill command
     if (strcmp(opcode, ".fill") == 0) {
@@ -185,7 +187,7 @@ void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1,
         return;  // End processing .fill
     }
      // Debugging: ตรวจสอบค่าที่ได้รับ
-    printf("Generating machine code for  %s, %s %s %s, %s\n", opcode, arg0, arg1, arg2, label);
+   // printf("Generating machine code for  %s, %s %s %s, %s\n", opcode, arg0, arg1, arg2, label);
 
     // R-type instructions
     // if (strcmp(opcode, "add") == 0 || strcmp(opcode, "nand") == 0) {
@@ -195,8 +197,9 @@ void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1,
     //     instruction |= (regA << 19) | (regB << 16) | destReg;
     //     instruction &= 0xFFFFFFFC; // Clear bits 2-0
     // }
+    printf("%s\n",opcode);
 
-    if (strcmp(opcode, "add")) {
+    if (!strcmp(opcode, "add")) {
         int instructionAdd = 0;
         int regA = atoi(arg0);
         int regB = atoi(arg1);
@@ -205,21 +208,21 @@ void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1,
         instructionAdd |= (op << 22); 
         instructionAdd |= (regA << 19) | (regB << 16) | destReg;
         fprintf(outFilePtr, "%d\n", instructionAdd);
-    } if(strcmp(opcode, "nand")){
-
+    } else if(!strcmp(opcode, "nand")){
         int instruction = 0;
         int op = getOpcode(opcode);
         int regA = atoi(arg0);
         int regB = atoi(arg1);
         int destReg = atoi(arg2);
+
         instruction |=(op << 22) | (regA << 19) | (regB << 16) | destReg;
 
         if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){
             exit(1);
         }
-    fprintf(outFilePtr, "%d\n", instruction);
-    }  
-     if (!strcmp(opcode, "lw")) { 
+
+        fprintf(outFilePtr, "%d\n", instruction);
+    }  else if (!strcmp(opcode, "lw")) { 
         int instructionLOADW = 0;
         int op = getOpcode(opcode);
         int regA = atoi(arg0);
@@ -229,14 +232,24 @@ void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1,
         int offset = atoi(arg2);
         instructionLOADW |= (op << 22) | (regA << 19) | (regB << 16) | offset;
 
-        if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){ exit(1);}
         if( offset <= -32768 || offset >= 32767 ){ exit(1);}
+        if(!isNumber(arg0) || !isNumber(arg1)/*|| !isNumber(arg2)*/){ exit(1);}
         if( offset )
-    printf("%s" , arg2);
-    fprintf(outFilePtr, "%d\n", instructionLOADW);
+        fprintf(outFilePtr, "%d\n", instructionLOADW);
+    } else if(!strcmp(opcode, "beq")) {
+        int opCode = getOpcode(opcode); 
+        int regA = atoi(arg0);
+        int regB = atoi(arg1);
+        int offsetfield = isNumber(arg2) ? atoi(arg2) : (int)findLabelAddress(arg2)-(address+1);
 
+        if( offsetfield < -32768 || offsetfield > 32767 ){ 
+            exit(1);
+        }
+
+        int instruction = 0 | (opCode << 22) | (regA << 19) | (regB << 16) | (offsetfield & 0b1111111111111111);
+
+        fprintf(outFilePtr, "%d\n", instruction);
     }
-
 
     // Write instruction to output file
     // Ensure you write the instruction after it has been constructed
@@ -254,6 +267,8 @@ void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1,
     // }
 
 }
+
+
 //     // I-type instructions
 //     else if (strcmp(opcode, "lw") == 0 || strcmp(opcode, "sw") == 0 || strcmp(opcode, "beq") == 0) {
 //         int regA = atoi(arg0);

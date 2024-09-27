@@ -197,9 +197,8 @@ void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1,
     //     instruction |= (regA << 19) | (regB << 16) | destReg;
     //     instruction &= 0xFFFFFFFC; // Clear bits 2-0
     // }
-    printf("%s\n",opcode);
+    if (strcmp(opcode, "add")) {
 
-    if (!strcmp(opcode, "add")) {
         int instructionAdd = 0;
         int regA = atoi(arg0);
         int regB = atoi(arg1);
@@ -228,19 +227,21 @@ void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1,
         int regA = atoi(arg0);
         int regB = atoi(arg1);
 
-        if(arg2)
-        int offset = atoi(arg2);
-        instructionLOADW |= (op << 22) | (regA << 19) | (regB << 16) | offset;
+        if(!isNumber(arg2)){
+            string Label = arg2;
+        }else{int offset = atoi(arg2);}
+
+        instructionLOADW |= (op << 22) | (regA << 19) | (regB << 16) | toOffset(offset, 16);
 
         if( offset <= -32768 || offset >= 32767 ){ exit(1);}
-        if(!isNumber(arg0) || !isNumber(arg1)/*|| !isNumber(arg2)*/){ exit(1);}
+        if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){ exit(1);}
         if( offset )
         fprintf(outFilePtr, "%d\n", instructionLOADW);
     } else if(!strcmp(opcode, "beq")) {
         int opCode = getOpcode(opcode); 
         int regA = atoi(arg0);
         int regB = atoi(arg1);
-        int offsetfield = isNumber(arg2) ? atoi(arg2) : (int)findLabelAddress(arg2)-(address+1);
+        int offsetfield = isNumber(arg2) ? atoi(arg2) : findLabelAddress(arg2)-(address+1);
 
         if( offsetfield < -32768 || offsetfield > 32767 ){ 
             exit(1);
@@ -249,23 +250,34 @@ void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1,
         int instruction = 0 | (opCode << 22) | (regA << 19) | (regB << 16) | (offsetfield & 0b1111111111111111);
 
         fprintf(outFilePtr, "%d\n", instruction);
-    }
-
-    // Write instruction to output file
-    // Ensure you write the instruction after it has been constructed
-
-    //  if(strcmp(opcode, "nand") == 001){
         
-    //     int instruction = 0;
-    //     int regA = atoi(arg0);
-    //     int regB = atoi(arg1);
-    //     int destReg = atoi(arg2);
-    //     instruction |= (1 << 23) | (regA << 19) | (regB << 16) | (destReg & 0x7);
-    //     if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){
-    //         exit(1);
-    //     }
-    // }
+    } else if(!strcmp(opcode, "sw")){
+        int instructionLOADW = 0;
+        int op = getOpcode(opcode);
+        int regA = atoi(arg0);
+        int regB = atoi(arg1);
 
+        if(!isNumber(arg2)){
+            string Label = arg2;
+        }else{int offset = atoi(arg2);}
+
+        instructionLOADW |= (op << 22) | (regA << 19) | (regB << 16) |toOffset(offset, 16);
+
+        if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){ exit(1);}
+        if( offset <= -32768 || offset >= 32767 ){ exit(1);}
+        
+        // printf("%s" , arg2);
+        fprintf(outFilePtr, "%d\n", instructionLOADW);
+    }
+}
+
+// // Convert a value to a 16-bit signed offset
+int toOffset(int value, int bits) {
+    if (value < -(1 << (bits - 1)) || value >= (1 << (bits - 1))) {
+        printf("error: offset out of range\n");
+        exit(1);
+    }
+    return value & ((1 << bits) - 1); // Mask to bits
 }
 
 
@@ -294,11 +306,4 @@ void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1,
 //     fprintf(outFilePtr, "%d\n", instruction);
 // }
 
-// // Convert a value to a 16-bit signed offset
-// int toOffset(int value, int bits) {
-//     if (value < -(1 << (bits - 1)) || value >= (1 << (bits - 1))) {
-//         printf("error: offset out of range\n");
-//         exit(1);
-//     }
-//     return value & ((1 << bits) - 1); // Mask to bits
-// }
+

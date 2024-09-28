@@ -10,141 +10,343 @@
 #define MEMORY_SIZE 65536
 #define NUM_REGS 8
 
+typedef struct {
+    char label[LABEL_LENGTH];
+    int address;
+} Label;
 
-/* head - function */
-//อ่านบรรทัดไฟล์
-    int readAndParse(FILE *, char *, char *, char *, char *, char *);  
-//ตรวจสอบว่าข้อความเป็นตัวเลขไหม
-    int isNumber(char *); 
-//เปลี่ยนคำเป็นเลข
-    string convertToBinary( char*);
+Label labels[MAXLABELS];
+int labelCount = 0;
 
+int readAndParse(FILE *, char *, char *, char *, char *, char *);
+int isNumber(char *);
+int findLabelAddress(char *);
+void addLabel(char *, int);
+int getOpcode(char *);
+void generateMachineCode(FILE *, char *, char *, char *, char *, char *, int);
+int toOffset(int, int);
 
-
-/* main function */
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     char *inFileString, *outFileString;
     FILE *inFilePtr, *outFilePtr;
-    char label[MAXLINELENGTH], opcode[MAXLINELENGTH], arg0[MAXLINELENGTH],
-         arg1[MAXLINELENGTH], arg2[MAXLINELENGTH];
+    char label[MAXLINELENGTH], opcode[MAXLINELENGTH], arg0[MAXLINELENGTH], arg1[MAXLINELENGTH], arg2[MAXLINELENGTH];
+    int address = 0;
 
-    if (argc != 3) {  // argc = argument count (ชื่อโปรเเกรม, ชื่อไฟล์ assembly, ชื่อไฟล์ machine code)
-        printf("error: usage: %s <assembly-code-file> <machine-code-file>\n",
-            argv[0]);
-        exit(1);   // ถ้าไม่ถูกกระโดด exit เลย 
+    if (argc != 3) {
+        printf("error: usage: %s <assembly-code-file> <machine-code-file>\n", argv[0]);
+        exit(1);
     }
 
     inFileString = argv[1];
     outFileString = argv[2];
 
-    inFilePtr = fopen(inFileString, "r"); // เปิดไฟล์ Input เพื่ออ่าน 
-        if (inFilePtr == NULL) { // ไฟล์ว่าง exit 
-            printf("error in opening %s\n", inFileString);
-            exit(1); 
+    inFilePtr = fopen(inFileString, "r");
+    if (inFilePtr == NULL) {
+        printf("error in opening %s\n", inFileString);
+        exit(1);
+    }
+
+    // First pass: Collect labels
+    while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2)) {
+        if (strlen(label) > 0) {
+            addLabel(label, address);
         }
-    outFilePtr = fopen(outFileString, "w"); // output file เพื่อ เขียน
-        if (outFilePtr == NULL) {
-            printf("error in opening %s\n", outFileString);
-            exit(1);
+        address++;
+    }
+
+    // Reset file pointer
+    rewind(inFilePtr);
+    address = 0;
+    outFilePtr = fopen(outFileString, "w");
+    if (outFilePtr == NULL) {
+        printf("error in opening %s\n", outFileString);
+        exit(1);
+    }
+
+    // Second pass: Generate machine code
+    while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2)) {
+        generateMachineCode(outFilePtr, opcode, arg0, arg1, arg2, label, address);
+        address++;
+    }
+
+    fclose(inFilePtr);
+    fclose(outFilePtr);
+    return 0;
+}
+
+int isNumber(char *str) {
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (!isdigit(str[i]) && str[i] != '-') {
+            return 0; // Not a number
         }
+    }
+    return 1; // Is a number
+}
 
-    std::string opcodeNum;
-    // labelNum, opcodeNum, arg0Num, arg1Num, arg2Num;  //เอาไว้เก็บเลขเอาไปใช้ต่อ 
+// Read a long line from the input file
+int readLongLine(FILE *inFilePtr, char *line) {
+    char buffer[MAXLINELENGTH];
+    line[0] = '\0'; // Clear the initial value
 
-    while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2))
-    {
-        //arg0 = dest 
-        //arg1 = rs1
-        //arg2 = rs2
+    while (fgets(buffer, MAXLINELENGTH, inFilePtr)) {
+        strcat(line, buffer); // Concatenate lines
+        if (buffer[strlen(buffer) - 1] == '\n') {
+            break; // Stop if there's a newline
+        }
+    }
 
-        /* Gutto's part */
-         if (strcmp(opcode, "add") == 0) {
+    return strlen(line) > 0; // If there's data in line
+}
+
+// Read and parse a line of assembly code
+int readAndParse(FILE *inFilePtr, char *label, char *opcode, char *arg0, char *arg1, char *arg2) {
+    char line[MAXLINELENGTH];
+    char *ptr = line;
+
+    // Clear previous values
+    label[0] = opcode[0] = arg0[0] = arg1[0] = arg2[0] = '\0';
+
+    if (!readLongLine(inFilePtr, line)) return 0;
+
+    // Check if the line is too long
+    if (strlen(line) >= MAXLINELENGTH) {
+        printf("error: line too long\n");
+        exit(1);
+    }
+
+    ptr = line;
+
+
+    // Check for label
+    if (sscanf(ptr, "%[^\t\n ]", label)) {
+        ptr += strlen(label);
+        // Trim whitespace
+        while (*ptr == ' ' || *ptr == '\t') ptr++;
+    } else {
+        label[0] = '\0'; // No label
+    }
+
+    // Parse opcode and arguments
+    sscanf(ptr, "%s %s %s %s", opcode, arg0, arg1, arg2);
+
+    // Debugging: ตรวจสอบค่าที่อ่านออกมา
+    //printf("Parsed: '%s', '%s','%s', '%s','%s'\n", label, opcode, arg0, arg1, arg2);
+
+    return 1;
+}
+
+// Add a label to the label table
+void addLabel(char *label, int address) {
+    if (labelCount >= MAXLABELS) {
+        printf("error: too many labels\n");
+        exit(1);
+    }
+    strcpy(labels[labelCount].label, label);
+    labels[labelCount].address = address;
+    labelCount++;
+    printf("Added label: %s at address: %d\n", label, address); // Debugging
+}
+
+// Find the address of a label
+int findLabelAddress(char *label) {
+    for (int i = 0; i < labelCount; i++) {
+        if (strcmp(labels[i].label, label) == 0) {
+            return labels[i].address;
+        }
+    }
+    printf("error: undefined label '%s'\n", label);
+    exit(1);
+}
+
+// Convert opcode to binary representation
+int getOpcode(char *opcode) {
+    if (strcmp(opcode, "add") == 0) return 0b000;
+    if (strcmp(opcode, "nand") == 0) return 0b001;
+    if (strcmp(opcode, "lw") == 0) return 0b010;
+    if (strcmp(opcode, "sw") == 0) return 0b011;
+    if (strcmp(opcode, "beq") == 0) return 0b100;
+    if (strcmp(opcode, "jalr") == 0) return 0b101;
+    if (strcmp(opcode, "halt") == 0) return 0b110;
+    if (strcmp(opcode, "noop") == 0) return 0b111;
+    printf("error: invalid opcode %s\n", opcode);
+    exit(1);
+}
+
+// Generate machine code for the given assembly instruction
+void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1, char *arg2, char *label, int address) {
+
+    // Handle .fill command
+    if (strcmp(opcode, ".fill") == 0) {
+        int value;
+        if (isNumber(arg0)) {
+            value = atoi(arg0);  // If it's a number, use it directly
+        } else {
+            value = findLabelAddress(arg0);  // If it's a label, use its address
+        }
+        fprintf(outFilePtr, "%d\n", value);  // Write value to output file
+        return;  // End processing .fill
+    }
+     // Debugging: ตรวจสอบค่าที่ได้รับ
+   // printf("Generating machine code for  %s, %s %s %s, %s\n", opcode, arg0, arg1, arg2, label);
+
+    if (!strcmp(opcode, "add")) {
+        // int instructionADD = 0;
+        // int regA = atoi(arg0);
+        // int regB = atoi(arg1);
+        // int destReg = atoi(arg2);
+        // int op = getOpcode(opcode);
+        // instructionADD |= (op << 22); 
+        // instructionADD |= (regA << 19) | (regB << 16) | destReg;
+        // fprintf(outFilePtr, "%d\n", instructionADD);
+
         int instructionAdd = 0;
         int regA = atoi(arg0);
         int regB = atoi(arg1);
         int destReg = atoi(arg2);
         int op = getOpcode(opcode);
-        instructionAdd |= (op << 22); // Set opcode
-        instructionAdd |= (regA << 19) | (regB << 16) | destReg; // Mask destReg to ensure it fits in 3 bits
+        instructionAdd |= (op << 22); 
+        instructionAdd |= (regA << 19) | (regB << 16) | destReg;
         fprintf(outFilePtr, "%d\n", instructionAdd);
-    } else if (strcmp(opcode, "nand") == 0) {
-        int instructionNand = 0;
+
+    } else if(!strcmp(opcode, "nand")){
+        int instructionNAND = 0;
+        int op = getOpcode(opcode);
         int regA = atoi(arg0);
         int regB = atoi(arg1);
         int destReg = atoi(arg2);
+        instructionNAND |=(op << 22) | (regA << 19) | (regB << 16) | destReg;
+            if (!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)) {
+                exit(1);
+            }
+        fprintf(outFilePtr, "%d\n", instructionNAND);
+
+    // } else if (!strcmp(opcode, "lw")) { 
+    //     int instructionLOADW = 0;
+    //     int op = getOpcode(opcode);
+    //     int regA = atoi(arg0);
+    //     int regB = atoi(arg1);
+    //         // if (!isNumber(arg2)) {
+    //         //     string Label = arg2;
+    //         // } else {
+    //             int offset = atoi(arg2);
+    //         // }
+    //     instructionLOADW |= (op << 22) | (regA << 19) | (regB << 16) | toOffset(offset, 16);
+    //         if (offset <= -32768 || offset >= 32767) {
+    //             exit(1);
+    //         } else if (!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)) {
+    //             exit(1);
+    //         }
+    //         if (offset)
+    //     fprintf(outFilePtr, "%d\n", instructionLOADW);
+
+    // } else if (!strcmp(opcode, "sw")) {
+    //     int instructionLOADW = 0;
+    //     int op = getOpcode(opcode);
+    //     int regA = atoi(arg0);
+    //     int regB = atoi(arg1);
+    //     // if (!isNumber(arg2)) {
+    //     //     string Label = arg2;
+    //     // } else {
+    //         int offset = atoi(arg2);
+    //     // }
+    //     instructionLOADW |= (op << 22) | (regA << 19) | (regB << 16) |toOffset(offset, 16);
+    //     if (!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)) {
+    //         exit(1);
+    //     }
+    //     if (offset <= -32768 || offset >= 32767) {
+    //         exit(1);
+    //     }
+    //     // printf("%s" , arg2);
+    //     fprintf(outFilePtr, "%d\n", instructionLOADW);
+
+    } else if (!strcmp(opcode, "beq")) {
+        int instructionBEQ = 0;
+        int opCode = getOpcode(opcode); 
+        int regA = atoi(arg0);
+        int regB = atoi(arg1);
+        int offsetfield = isNumber(arg2) ? atoi(arg2) : findLabelAddress(arg2)-(address+1);
+            if (offsetfield < -32768 || offsetfield > 32767) { 
+                exit(1);
+            }
+        instructionBEQ |= (opCode << 22) | (regA << 19) | (regB << 16) | (offsetfield & 0b1111111111111111);
+        fprintf(outFilePtr, "%d\n", instructionBEQ);
+        
+    } else if (!strcmp(opcode, "jalr")) {
+        int instructionJALR = 0;
         int op = getOpcode(opcode);
-        instructionNand |= (op << 22); // Set opcode
-        instructionNand |= (regA << 19) | (regB << 16) | (destReg << 13) ; // Mask destReg to ensure it fits in 3 bits
-        fprintf(outFilePtr, "%d\n", instructionNand);
-    
-        }if (!strcmp(opcode, "lw")) { //Load regB จาก memory และ memory address หาได้จากการเอา offsetField บวกกับค่าใน regA
-        
-        }if (!strcmp(opcode, "sw")) { //Store regB ใน memory และ memory address หาได้จากการเอา offsetField บวกกับค่าใน regA
-        
-        }
-        
-        /* Kaewtar's part */
+        int regA = atoi(arg0);
+        int destReg = atoi(arg1);
+        instructionJALR = 0 | (op << 22) | (regA << 19) | (destReg << 16) | 0b0000000000000000;
+        fprintf(outFilePtr, "%d\n", instructionJALR);
 
-        if (!strcmp(opcode, "beq")) { // ถ้า ค่าใน regA เท่ากับค่าใน regB ให้กระโดดไปที่ address PC+1+offsetField ซึ่ง PC คือ address ของ beq instruction
-        
-        }if (!strcmp(opcode, "jalr")) { //เก็บค่า PC+1 ไว้ใน regB ซึ่ง PC คือ address ของ jalr instruction และกระโดดไปที่ address ที่ถูกเก็บไว้ใน regA แต่ถ้า regA และ regB คือ register ตัวเดียวกัน ให้เก็บ PC+1 ก่อน และค่อยกระโดดไปที่ PC+1
-        
-        }if (!strcmp(opcode, "halr")) { //เพิ่มค่า PC เหมือน instructions อื่นๆ และ halt เครื่อง นั่นคือให้ simulator รู้ว่าเครื่องมีการ halted เกิดขึ้น
-        
-        }if (!strcmp(opcode, "noop")) { //เพิ่มค่า PC เหมือน instructions อื่นๆ และ halt เครื่อง นั่นคือให้ simulator รู้ว่าเครื่องมีการ halted เกิดขึ้น
-        
-        }
-        
+    } else if (!strcmp(opcode, "halt")) {
+        int instructionHALT = 0;
+        int op = getOpcode(opcode);
+        instructionHALT = 0 | (op << 22) | 0;
+        fprintf(outFilePtr, "%d\n", instructionHALT);
+
+    } else if (!strcmp(opcode, "noop")) {
+        int instructionNOOP = 0;
+        int op = getOpcode(opcode);
+        instructionNOOP = 0 | (op << 22) | 0;
+        fprintf(outFilePtr, "%d\n", instructionNOOP);
+
+    } 
+}
+
+// Convert a value to a 16-bit signed offset
+int toOffset(int value, int bits) {
+    if (value < -(1 << (bits - 1)) || value >= (1 << (bits - 1))) {
+        printf("error: offset out of range\n");
+        exit(1);
     }
-
-    // rewind(inFilePtr); //อ่านไฟล์อีกรอบ    
-    return(0);
-
+    return value & ((1 << bits) - 1); // Mask to bits
 }
 
+//run command
+// ./assembler input.txt output.txt
+// gcc readAndParse.cpp -o assembler
 
+// g++ demoAssembler.c -o demoAssembler
+// ./demoAssembler input2.txt output2.txt
 
-/* detail - function */
-int readAndParse(FILE *inFilePtr, char *label, char *opcode, char *arg0,char *arg1, char *arg2){
-    char line[MAXLINELENGTH];
-    char *ptr = line;
+// g++ readAndParse.cpp -o demoAssembler
 
-    /* delete prior values */
-        label[0] = opcode[0] = arg0[0] = arg1[0] = arg2[0] = '\0';
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /* read the line from the assembly-language file */
-        if (fgets(line, MAXLINELENGTH, inFilePtr) == NULL) {
-	        /* reached end of file */
-            return(0);
-        }
+// R-type instructions
+// if (strcmp(opcode, "add") == 0 || strcmp(opcode, "nand") == 0) {
+//     int regA = atoi(arg0);
+//     int regB = atoi(arg1);
+//     int destReg = atoi(arg2);
+//     instruction |= (regA << 19) | (regB << 16) | destReg;
+//     instruction &= 0xFFFFFFFC; // Clear bits 2-0
+// }
+//     // I-type instructions
+//     else if (strcmp(opcode, "lw") == 0 || strcmp(opcode, "sw") == 0 || strcmp(opcode, "beq") == 0) {
+//         int regA = atoi(arg0);
+//         int regB = atoi(arg1);
+//         int offset;
 
-    /* check for line too long (by looking for a \n) */
-        if (strchr(line, '\n') == NULL) {
-            /* line too long */
-            printf("error: line too long\n");
-            exit(1);
-        }
+//         if (strcmp(opcode, "beq") == 0) {
+//             offset = findLabelAddress(arg2) - (instruction / 4 + 1); // PC + 1
+//         } else {
+//             offset = atoi(arg2);
+//         }
 
-    /* is there a label? */
-        ptr = line;
-        if (sscanf(ptr, "%[^\t\n ]", label)) {
-	        /* successfully read label; advance pointer over the label */
-            ptr += strlen(label);
-        }
+//         instruction |= (regA << 19) | (regB << 16) | toOffset(offset, 16);
+//     }
+//     // J-type instructions
+//     else if (strcmp(opcode, "jalr") == 0) {
+//         int regA = atoi(arg0);
+//         int regB = atoi(arg1);
+//         instruction |= (regA << 19) | (regB << 16);
+//     }
 
-    /*
-     * Parse the rest of the line.  Would be nice to have real regular
-     * expressions, but scanf will suffice.
-     */
-        sscanf(ptr, "%*[\t\n ]%[^\t\n ]%*[\t\n ]%[^\t\n ]%*[\t\n ]%[^\t\n ]%*[\t\n ]%[^\t\n ]",
-            opcode, arg0, arg1, arg2);
-        return(1);
-}
+//     // Write instruction to output file
+//     fprintf(outFilePtr, "%d\n", instruction);
+// }
 
-int isNumber(char *string)
-{
-    /* return 1 if string is a number */
-    int i;
-    return( (sscanf(string, "%d", &i)) == 1);
-}
+// 00000000 001 010 0000000000000000001
+// 00000000 001 001 010 0000000000000 011
+// 000000000010010100000000000000011  nand 1 2 3

@@ -269,6 +269,28 @@ void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1,
         // printf("%s" , arg2);
         fprintf(outFilePtr, "%d\n", instructionLOADW);
     }
+    // jalr, halt, noop
+     else if (!strcmp(opcode, "jalr")) {
+        int instructionJALR = 0;
+        int op = getOpcode(opcode);
+        int regA = atoi(arg0);
+        int destReg = atoi(arg1);
+        instructionJALR = 0 | (op << 22) | (regA << 19) | (destReg << 16) | 0b0000000000000000;
+        fprintf(outFilePtr, "%d\n", instructionJALR);
+
+    } else if (!strcmp(opcode, "halt")) {
+        int instructionHALT = 0;
+        int op = getOpcode(opcode);
+        instructionHALT = 0 | (op << 22) | 0;
+        fprintf(outFilePtr, "%d\n", instructionHALT);
+
+    } else if (!strcmp(opcode, "noop")) {
+        int instructionNOOP = 0;
+        int op = getOpcode(opcode);
+        instructionNOOP = 0 | (op << 22) | 0;
+        fprintf(outFilePtr, "%d\n", instructionNOOP);
+
+    } 
 }
 
 // // Convert a value to a 16-bit signed offset

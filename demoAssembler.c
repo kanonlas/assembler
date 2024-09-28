@@ -310,8 +310,6 @@ int toOffset(int value, int bits) {
 // g++ demoAssembler.c -o demoAssembler
 // ./demoAssembler input2.txt output2.txt
 
-// g++ readAndParse.cpp -o demoAssembler
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // R-type instructions

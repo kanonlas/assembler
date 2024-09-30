@@ -221,22 +221,21 @@ void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1,
         }
 
         fprintf(outFilePtr, "%d\n", instruction);
-    }  else if (!strcmp(opcode, "lw")) { 
-        int instructionLOADW = 0;
+    } else if (!strcmp(opcode, "lw") || !strcmp(opcode, "sw")) { 
+        int instruction = 0;
         int op = getOpcode(opcode);
         int regA = atoi(arg0);
         int regB = atoi(arg1);
+            
+        int offset = isNumber(arg2) ? atoi(arg2) : findLabelAddress(arg2) ;
+        instruction |= (op << 22) | (regA << 19) | (regB << 16) | (offset & 0b1111111111111111);
+            if (offset < -32768 || offset > 32767) {
+                exit(1);
+            } else if (!isNumber(arg0) || !isNumber(arg1)) {
+                exit(1);
+            }
 
-        if(!isNumber(arg2)){
-            string Label = arg2;
-        }else{int offset = atoi(arg2);}
-
-        instructionLOADW |= (op << 22) | (regA << 19) | (regB << 16) | toOffset(offset, 16);
-
-        if( offset <= -32768 || offset >= 32767 ){ exit(1);}
-        if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){ exit(1);}
-        if( offset )
-        fprintf(outFilePtr, "%d\n", instructionLOADW);
+        fprintf(outFilePtr, "%d\n", instruction);
     } else if(!strcmp(opcode, "beq")) {
         int opCode = getOpcode(opcode); 
         int regA = atoi(arg0);
@@ -251,23 +250,6 @@ void generateMachineCode(FILE *outFilePtr, char *opcode, char *arg0, char *arg1,
 
         fprintf(outFilePtr, "%d\n", instruction);
         
-    } else if(!strcmp(opcode, "sw")){
-        int instructionLOADW = 0;
-        int op = getOpcode(opcode);
-        int regA = atoi(arg0);
-        int regB = atoi(arg1);
-
-        if(!isNumber(arg2)){
-            string Label = arg2;
-        }else{int offset = atoi(arg2);}
-
-        instructionLOADW |= (op << 22) | (regA << 19) | (regB << 16) |toOffset(offset, 16);
-
-        if(!isNumber(arg0) || !isNumber(arg1)|| !isNumber(arg2)){ exit(1);}
-        if( offset <= -32768 || offset >= 32767 ){ exit(1);}
-        
-        // printf("%s" , arg2);
-        fprintf(outFilePtr, "%d\n", instructionLOADW);
     }
     // jalr, halt, noop
      else if (!strcmp(opcode, "jalr")) {

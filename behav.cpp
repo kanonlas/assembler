@@ -40,6 +40,26 @@ int twoComplement(int num)
         return num;
 }
 
+int signedBinaryToDecimal(string binary) {
+    // check if binary is negative number
+    bool isNegative = (binary[0] == '1');
+    int decimalValue = 0;
+
+    // Convert the binary string to decimal
+    for (int i = 0; i < 16; ++i) {
+        if (binary[i] == '1') {
+            decimalValue += pow(2, 15 - i);
+        }
+    }
+
+    // If it's a negative number, convert to two's complement by subtracting 2^16
+    if (isNegative) {
+        decimalValue -= pow(2, 16);
+    }
+
+    return decimalValue;
+}
+
 void printform(ofstream &outFile, int pos, vector<int> mem, int reg[], int size){
     cout << "@@@\nstate:\n";
     cout << "\tpc " << pos + 1 << "\n";
@@ -109,7 +129,6 @@ void runMachineCode(ofstream &outFile, vector<int> machineCode)
     printform(outFile, -1, address, reg, address.size());
     for (int i = 0; i < address.size(); i++)
     {
-        outFile << " Current line: " << i << endl;
         string bit = DecimalToBinary(address[i]);
         string opcode = split(bit, 7, 9);
         if (opcode == "000") // case:add
@@ -121,7 +140,6 @@ void runMachineCode(ofstream &outFile, vector<int> machineCode)
             int rtDec = BinarytoDecimal(rt, rt.length());
             int rdDec = BinarytoDecimal(rd, rd.length());
             reg[rdDec] = reg[rsDec] + reg[rtDec];
-            outFile <<"add "<< reg[rdDec] << "\n\n";
             printform(outFile, i, address, reg, address.size());
             inscount++;
             
@@ -135,7 +153,6 @@ void runMachineCode(ofstream &outFile, vector<int> machineCode)
             int rtDec = BinarytoDecimal(rt, rt.length());
             int rdDec = BinarytoDecimal(rd, rd.length());
             reg[rdDec] = nandOperation(reg[rsDec], reg[rtDec]);
-            outFile <<"nand "<< reg[rdDec] << "\n\n";
             printform(outFile, i, address, reg, address.size());
             inscount++;
             
@@ -193,9 +210,11 @@ void runMachineCode(ofstream &outFile, vector<int> machineCode)
             int rsDec = BinarytoDecimal(rs, rs.length());
             int immDec = BinarytoDecimal(imm, imm.length());
             if (reg[rtDec] == reg[rsDec])
-            {
-                immDec = twoComplement(immDec);
-                // cout<<"this is "<<immDec<<endl;
+            {   
+                if(imm[0] == '1'){
+                    immDec = signedBinaryToDecimal(imm);
+                }
+                 cout<<"this is "<<immDec<<endl;
                 i = i + immDec;
             }
             printform(outFile, i, address, reg, address.size());

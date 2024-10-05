@@ -264,7 +264,7 @@ void runMachineCode(ofstream &outFile, vector<int> machineCode)
 int main()
 {
     
-    ofstream outFile("outpt.txt");
+    ofstream outFile("simulationOutput.txt");
     if (!outFile)
     {
         cerr << "Error opening file!" << endl;

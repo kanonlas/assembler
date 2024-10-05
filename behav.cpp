@@ -95,19 +95,19 @@ vector<int> readMachineCode(){
 void runMachineCode(ofstream &outFile, vector<int> machineCode)
 {
     vector<int> address = machineCode;
-    int addrSize = address.size();
+    //int address.size() = address.size();
     int reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     int inscount = 0;
 
-    for (int i = 0; i < addrSize; ++i){
+    for (int i = 0; i < address.size(); ++i){
         cout << "memory[" << i << "]=" << address[i] << endl;
         outFile << "memory[" << i << "]=" << address[i] << endl;
     }
     
     cout << "\n\n";
     outFile << "\n\n";
-    printform(outFile, -1, address, reg, addrSize);
-    for (int i = 0; i < addrSize; i++)
+    printform(outFile, -1, address, reg, address.size());
+    for (int i = 0; i < address.size(); i++)
     {
         outFile << " Current line: " << i << endl;
         string bit = DecimalToBinary(address[i]);
@@ -122,7 +122,7 @@ void runMachineCode(ofstream &outFile, vector<int> machineCode)
             int rdDec = BinarytoDecimal(rd, rd.length());
             reg[rdDec] = reg[rsDec] + reg[rtDec];
             outFile <<"add "<< reg[rdDec] << "\n\n";
-            printform(outFile, i, address, reg, addrSize);
+            printform(outFile, i, address, reg, address.size());
             inscount++;
             
         }
@@ -136,7 +136,7 @@ void runMachineCode(ofstream &outFile, vector<int> machineCode)
             int rdDec = BinarytoDecimal(rd, rd.length());
             reg[rdDec] = nandOperation(reg[rsDec], reg[rtDec]);
             outFile <<"nand "<< reg[rdDec] << "\n\n";
-            printform(outFile, i, address, reg, addrSize);
+            printform(outFile, i, address, reg, address.size());
             inscount++;
             
         }
@@ -149,7 +149,7 @@ void runMachineCode(ofstream &outFile, vector<int> machineCode)
             int resultImm = BinarytoDecimal(imm, imm.length());
             int resultaddr = reg[resultRs] + resultImm;
             int addrRt = BinarytoDecimal(rt, rt.length());
-            if (resultaddr >= addrSize)
+            if (resultaddr >= address.size())
             {
                 throw invalid_argument("received out of address");
                 break;
@@ -157,7 +157,7 @@ void runMachineCode(ofstream &outFile, vector<int> machineCode)
             else
             {
                 reg[addrRt] = address[resultaddr];
-                printform(outFile, i, address, reg, addrSize);
+                printform(outFile, i, address, reg, address.size());
                 inscount++;
             }
 
@@ -172,14 +172,14 @@ void runMachineCode(ofstream &outFile, vector<int> machineCode)
             int resultImm = BinarytoDecimal(imm, imm.length());
             int resultaddr = reg[resultRs] + resultImm; // address that is target need to load to reg
             int addrRt = BinarytoDecimal(rt, rt.length());
-            if (resultaddr >= addrSize)
+            if (resultaddr >= address.size())
             {
                 throw invalid_argument("received out of address");
             }
             else
             {
                 address[resultaddr] = reg[addrRt];
-                printform(outFile, i, address, reg, addrSize);
+                printform(outFile, i, address, reg, address.size());
                 inscount++;
             }
             
@@ -198,7 +198,7 @@ void runMachineCode(ofstream &outFile, vector<int> machineCode)
                 // cout<<"this is "<<immDec<<endl;
                 i = i + immDec;
             }
-            printform(outFile, i, address, reg, addrSize);
+            printform(outFile, i, address, reg, address.size());
             inscount++;
             
         }
@@ -210,7 +210,7 @@ void runMachineCode(ofstream &outFile, vector<int> machineCode)
             int resultRs = BinarytoDecimal(rs, rs.length());
             reg[addrRt] = i + 1; 
             i = reg[resultRs]-1;
-            printform(outFile, i, address, reg, addrSize);
+            printform(outFile, i, address, reg, address.size());
             inscount++;
             
         }
@@ -225,12 +225,12 @@ void runMachineCode(ofstream &outFile, vector<int> machineCode)
             outFile << "machine halted" << endl;
             outFile << "total of " << inscount << " instructions executed" << endl;
             outFile << "final state of machine:\n\n";
-            printform(outFile, i, address, reg, addrSize);
+            printform(outFile, i, address, reg, address.size());
             break;
 
-            // case:noop
+           // case:noop
         }
-        else if (opcode == "111")
+        else if (opcode == "111") 
         {
 
             // unknown opcode

@@ -1,0 +1,30 @@
+     add 0 0 1       result
+     lw 0 2 mcand    
+     lw 0 3 mer     
+     lw 0 4 one      bitValue
+     lw 0 5 one      bitPosition
+     add 0 0 6       andresult
+mult lw 0 7 fifteen
+     beq 5 7 lastBit
+     nand 3 4 6
+     nand 6 6 6
+     beq 6 0 skipAdd
+     add 2 1 1
+skipAdd add 2 2 2
+     add 4 4 4
+     lw 0 7 one 
+     add 7 5 5
+     beq 0 0 mult
+lastBit nand 3 4 6
+     nand 6 6 6
+     beq 6 0 end
+     add 2 1 1
+end halt
+mcand .fill 8       multiplicand
+mer .fill 9        nultiplier
+one .fill 1
+fifteen .fill 15    maxBit
+multAddr .fill mult
+endAddr .fill end
+skipAddr .fill skipAdd
+lastBitAddr .fill lastBit

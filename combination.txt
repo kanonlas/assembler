@@ -1,0 +1,55 @@
+    lw 0 1 n
+    lw 0 2 r
+    beq 1 2 baseCaseInput
+    beq 0 2 baseCaseInput
+    lw 0 4 combinationAddr
+    jalr 4 7    call combination(n,r)
+done halt
+baseCaseInput   lw 0 3 one  
+                beq 0 0 done
+baseCase        lw 0 3 one
+                lw 0 6 neg1
+                add 6 5 5       clear r in stack
+                add 6 5 5       clear n in stack
+                add 6 5 5       clear return address in stack
+                lw 5 7 stack    load return address
+                jalr 7 1        
+combination     lw 0 6 one
+                sw 5 7 stack    store return address in stack
+                add 6 5 5 
+                sw 5 1 stack    store n in stack
+                add 6 5 5
+                sw 5 2  stack   store r in stack
+                add 6 5 5       
+                beq 1 2 baseCase
+                beq 0 2 baseCase
+                lw 0 6 neg1 
+                add 6 1 1       do n-1
+                jalr 4 7        combination(n-1, r)
+                add 6 5 5       clear r in stack
+                lw 5 2 stack    load old r from stack
+                add 6 5 5       clear n in stack
+                lw 5 1 stack    load old n from stack
+                add 6 1 1       do n-1
+                add 6 2 2       do r-1
+                lw 0 6 one
+                sw 5 3 stack    store return value of combination(n-1, r) in stack
+                add 6 5 5
+                jalr 4 7        call combination(n-1, r-1)
+                lw 0 6 neg1     
+                add 6 5 5       clear C(n-1, r) from stack
+                lw 5 4 stack    load value of c(n-1, r) from stack
+                add 4 3 3       do c(n, r) = c(n-1, r) + c(n-1, r-1)
+                add 6 5 5       clear return address from stack
+                lw 5 7 stack    load return address from stack
+                lw 0 4 combinationAddr  set register 4 to hold combinationAddr
+                jalr 7 1        jump and return
+n .fill 10
+r .fill 5
+neg1 .fill -1
+one .fill 1
+doneAddr .fill done
+combinationAddr .fill combination
+baseCaseAddr .fill baseCase
+baseCaseInputAddr .fill baseCaseInput
+stack .fill 0

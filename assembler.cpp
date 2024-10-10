@@ -8,7 +8,7 @@
 
 #define MAXLINELENGTH 1000
 #define MAXLABELS 100
-#define LABEL_LENGTH 7
+#define LABEL_LENGTH 100
 #define MEMORY_SIZE 65536
 #define NUM_REGS 8
 

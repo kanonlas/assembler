@@ -191,7 +191,7 @@ void runMachineCode(ofstream &outFile, vector<int> machineCode)
             int addrRt = BinarytoDecimal(rt, rt.length());
             if (resultaddr >= address.size())
             {
-                throw invalid_argument("received out of address");
+                address.push_back(reg[addrRt]);
             }
             else
             {
@@ -214,7 +214,6 @@ void runMachineCode(ofstream &outFile, vector<int> machineCode)
                 if(imm[0] == '1'){
                     immDec = signedBinaryToDecimal(imm);
                 }
-                 cout<<"this is "<<immDec<<endl;
                 i = i + immDec;
             }
             printform(outFile, i, address, reg, address.size());

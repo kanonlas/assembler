@@ -2,19 +2,17 @@
      lw 0 2 divisor    
      add 0 0 3      quotient
      nand 2 2 2     flip bit
-     lw 0 5 one
-     add 5 2 2
+     lw 0 7 one
+     add 7 2 2
 divide add 2 1 1
      lw 0 5 compare
      nand 1 5 6          check minus
      lw 0 5 fifteen
      beq 5 6 remain
-     lw 0 5 one
-     add 5 3 3
+     add 7 3 3
      beq 0 0 divide
 remain nand 2 2 2
-     lw 0 5 one
-     add 5 2 2
+     add 7 2 2
      beq 0 6 done
      add 2 1 1
 done halt
